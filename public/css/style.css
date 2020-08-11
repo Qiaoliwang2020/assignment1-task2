@@ -1,36 +1,83 @@
-/* Optional: Makes the sample page fill the window. */
+/* Optional: Makes the Sticky Footer. */
 html,
 body {
+    display: flex;
+    min-height: 100vh;
+    flex-direction: column;
+    background-color: #B783C3;
+}
+main {
+    flex: 1 0 auto;
+}
+
+.title,.mainText{
+    color: white;
+}
+.brand-logo{
     height: 100%;
-    margin: 0;
-    padding: 0;
 }
-h1{
-    font-size: 28px;
+.brand-logo .circle{
+    height: 100%;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    padding-left: 15px;
 }
-h2{
-    font-size: 22px;
-}
-.nav{
-    padding:0px 30px;
-}
-.row .col{
-    padding: 0px;
-}
+
 .container.input-box{
     padding-top: 20px;
+}
+/* input field */
+input[type=text]:not(.browser-default){
+    border-bottom: 1px solid #FFF;
+}
+
+/* label color */
+.input-field label {
+    color: #FFF;
+    font-size: 18px;
+}
+/* label focus color */
+.input-field input[type=text]:not(.browser-default):focus + label {
+    color: #000;
+}
+/* label underline focus color */
+.input-field input[type=text]:not(.browser-default):focus {
+    border-bottom: 1px solid #000;
+    box-shadow: 0 1px 0 0 #000;
+}
+
+.bg-purple{
+    background-color: #9E65A9;;
+}
+.btn.bg-purple:hover{
+    background-color: #9E65A9;
 }
 /* Always set the map height explicitly to define the size of the div
        * element that contains the map. */
 #map {
-    height:calc(100% - 200px);
+    height:400px;
 }
-
 
 #directions-panel {
     margin-top: 10px;
-    background-color: #ffee77;
     padding: 10px;
-    overflow: scroll;
-    height: 174px;
 }
+.page-footer{
+    padding-top: 0px;
+    background-color: #9E65A9;
+}
+.footer-copyright .copyright{
+    display: flex;
+    justify-content: space-between;
+    justify-items: center;
+}
+
+.footer-copyright .copyright .github{
+    display: flex;
+    justify-items: center;
+}
+.footer-copyright .copyright .github img{
+    height: 20px;
+    padding-right: 10px;
+}
+

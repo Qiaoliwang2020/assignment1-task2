@@ -10,6 +10,8 @@ function initMap() {
             lng: -87.65
         }
     });
+    let curPosition = '';
+    let nearbyPosition = '';
 
     // Create the search box and link it to the UI element.
     const inputStart = document.getElementById("start");
@@ -35,7 +37,6 @@ function initMap() {
         addMarkers(map,places);
 
         // get the curPosition
-        let curPosition = '';
         places.forEach((place)=>{
             curPosition = place.geometry.location;
         })
@@ -48,11 +49,13 @@ function initMap() {
                 { location: curPosition, radius: 500, type: "parking" },
                 (results, status) => {
                     if (status !== "OK") return;
+                    nearbyPosition = results[0].geometry.location;
                     createMarkers(results, map);
                 }
             );
         }
     });
+
     destination.addListener("places_changed", () => {
         const places = destination.getPlaces();
 
@@ -60,12 +63,20 @@ function initMap() {
             return;
         }
         addMarkers(map,places);
+
+        // if we have current position , calculate and display route
+        if (curPosition){
+            calculateAndDisplayRoute(directionsService, directionsRenderer);
+        }
+
     });
 
     directionsRenderer.setMap(map);
 
+    // find a ride
     document.getElementById("submit").addEventListener("click", () => {
-        calculateAndDisplayRoute(directionsService, directionsRenderer);
+
+        createLine(map,nearbyPosition,curPosition)
     });
 }
 
@@ -103,7 +114,7 @@ function calculateAndDisplayRoute(directionsService, directionsRenderer) {
     );
 }
 
-// add markers
+// add markers for current and destination
 let markers = [];
 function addMarkers(map,places){
     // Clear out the old markers.
@@ -145,6 +156,7 @@ function addMarkers(map,places){
     map.fitBounds(bounds);
 }
 
+// create Markers for nearby parking (driver)
 function createMarkers(places, map) {
     const bounds = new google.maps.LatLngBounds();
 
@@ -154,7 +166,7 @@ function createMarkers(places, map) {
             size: new google.maps.Size(71, 71),
             origin: new google.maps.Point(0, 0),
             anchor: new google.maps.Point(17, 34),
-            scaledSize: new google.maps.Size(25, 25)
+            scaledSize: new google.maps.Size(40, 40)
         };
         new google.maps.Marker({
             map,
@@ -166,6 +178,40 @@ function createMarkers(places, map) {
     }
 
     map.fitBounds(bounds);
+}
+
+// create line for the driver to rider
+function  createLine(map,driverLocation,currentLocation) {
+    const lineSymbol = {
+        path: google.maps.SymbolPath.CIRCLE,
+        scale: 3,
+        strokeColor: "blue"
+    };
+    // Create the polyline and add the symbol to it via the 'icons' property.
+    const line = new google.maps.Polyline({
+        path: [
+            driverLocation,
+            currentLocation
+        ],
+        icons: [
+            {
+                icon: lineSymbol,
+                offset: "100%"
+            }
+        ],
+        map: map
+    });
+    animateCircle(line);
+}
+
+function animateCircle(line) {
+    let count = 0;
+    window.setInterval(() => {
+        count = (count + 1) % 200;
+        const icons = line.get("icons");
+        icons[0].offset = count / 2 + "%";
+        line.set("icons", icons);
+    }, 20);
 }
 
 
