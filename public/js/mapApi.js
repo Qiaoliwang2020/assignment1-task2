@@ -1,8 +1,12 @@
 "use strict";
 
+let timer;
+
 function initMap() {
+
     const directionsService = new google.maps.DirectionsService();
-    const directionsRenderer = new google.maps.DirectionsRenderer();
+    const directionsRenderer = new google.maps.DirectionsRenderer({ suppressMarkers: true });
+
     const map = new google.maps.Map(document.getElementById("map"), {
         zoom: 6,
         center: {
@@ -71,41 +75,34 @@ function initMap() {
 
     });
 
-    directionsRenderer.setMap(map);
-
     // find a ride
     document.getElementById("submit").addEventListener("click", () => {
 
-        createLine(map,nearbyPosition,curPosition)
+        createLine(map,nearbyPosition,curPosition);
+
+        // start to count down the timer
+        timer = setInterval("CountDown()", 1000);
     });
+
+    directionsRenderer.setMap(map);
 }
 
 function calculateAndDisplayRoute(directionsService, directionsRenderer) {
 
+    let start = document.getElementById("start").value;
+    let end = document.getElementById("end").value;
+
     directionsService.route(
         {
-            origin: document.getElementById("start").value,
-            destination: document.getElementById("end").value,
+            origin: start,
+            destination: end,
             optimizeWaypoints: false,
             travelMode: google.maps.TravelMode.DRIVING
         },
         (response, status) => {
+            console.log(response,'res');
             if (status === "OK") {
                 directionsRenderer.setDirections(response);
-                const route = response.routes[0];
-                const summaryPanel = document.getElementById("directions-panel");
-
-                summaryPanel.innerHTML = ""; // For each route, display summary information.
-
-                for (let i = 0; i < route.legs.length; i++) {
-                    const routeSegment = i + 1;
-                    summaryPanel.innerHTML +=
-                        "<b>Route Segment: " + routeSegment + "</b><br>";
-                    summaryPanel.innerHTML += route.legs[i].start_address + " to ";
-                    summaryPanel.innerHTML += route.legs[i].end_address + "<br>";
-                    summaryPanel.innerHTML +=
-                        route.legs[i].distance.text + "<br><br>";
-                }
 
             } else {
                 window.alert("Directions request failed due to " + status);
@@ -117,11 +114,7 @@ function calculateAndDisplayRoute(directionsService, directionsRenderer) {
 // add markers for current and destination
 let markers = [];
 function addMarkers(map,places){
-    // Clear out the old markers.
-    markers.forEach(marker => {
-        marker.setMap(null);
-    });
-    markers = [];
+
     // For each place, get the icon, name and location.
     const bounds = new google.maps.LatLngBounds();
     places.forEach(place => {
@@ -142,7 +135,12 @@ function addMarkers(map,places){
                 map,
                 icon,
                 title: place.name,
-                position: place.geometry.location
+                position: place.geometry.location,
+                label: {
+                    color: 'red',
+                    text: place.name,
+                    fontSize: '14px',
+                },
             })
         );
 
@@ -180,15 +178,19 @@ function createMarkers(places, map) {
     map.fitBounds(bounds);
 }
 
+let lineSymbol, line;
 // create line for the driver to rider
 function  createLine(map,driverLocation,currentLocation) {
-    const lineSymbol = {
+
+    lineSymbol = {}; line = null;
+
+    lineSymbol = {
         path: google.maps.SymbolPath.CIRCLE,
         scale: 3,
         strokeColor: "blue"
     };
     // Create the polyline and add the symbol to it via the 'icons' property.
-    const line = new google.maps.Polyline({
+    line = new google.maps.Polyline({
         path: [
             driverLocation,
             currentLocation
@@ -213,5 +215,25 @@ function animateCircle(line) {
         line.set("icons", icons);
     }, 20);
 }
+
+
+let minues = Math.floor(Math.random() * 3) + 1; // returns a random integer from 1 to 3
+let maxtime = parseInt(minues) * 60;  // 1 hour = 60*60
+
+function CountDown() {
+    if (maxtime >= 0) {
+        let minutes = Math.floor(maxtime / 60),
+            seconds = Math.floor(maxtime % 60),
+            msg = `The driver has ${ minutes} minutes and ${seconds} seconds to reach your position`;
+        document.all["timer"].innerHTML = msg;
+        --maxtime;
+    } else{
+        clearInterval(timer);
+        document.all["timer"].innerHTML = `The driver has arrived`;
+    }
+}
+
+
+
 
 
