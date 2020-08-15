@@ -1,6 +1,11 @@
 "use strict";
 
+
+const findRide = document.getElementById("findRide");
+
 let timer;
+let minutes = Math.floor(Math.random() * 2) + 1; // returns a random integer from 1 to 2
+let maxTime = parseInt(minutes) * 60;  // 1 hour = 60*60
 
 function initMap() {
 
@@ -14,6 +19,7 @@ function initMap() {
             lng: -87.65
         }
     });
+
     let curPosition = '';
     let nearbyPosition = '';
 
@@ -24,6 +30,7 @@ function initMap() {
     const inputEnd = document.getElementById(("end"));
     const destination = new google.maps.places.SearchBox(inputEnd);
 
+    findRide.disabled = true;
 
     // Bias the SearchBox results towards current map's viewport.
     map.addListener("bounds_changed", () => {
@@ -38,7 +45,7 @@ function initMap() {
         if (places.length == 0) {
             return;
         }
-        addMarkers(map,places);
+        addLocationMarkers(map,places);
 
         // get the curPosition
         places.forEach((place)=>{
@@ -52,45 +59,64 @@ function initMap() {
             service.nearbySearch(
                 { location: curPosition, radius: 500, type: "parking" },
                 (results, status) => {
-                    if (status !== "OK") return;
+                    if (status !== "OK") {
+                        alert('Oops! there may not be a driver in the current area, please enter an urban address.');
+                        return
+                    };
                     nearbyPosition = results[0].geometry.location;
-                    createMarkers(results, map);
+                    createDriverMarkers(results, map);
                 }
             );
         }
     });
 
     destination.addListener("places_changed", () => {
+
         const places = destination.getPlaces();
 
         if (places.length == 0) {
             return;
         }
-        addMarkers(map,places);
+        addLocationMarkers(map,places);
 
         // if we have current position , calculate and display route
         if (curPosition){
-            calculateAndDisplayRoute(directionsService, directionsRenderer);
-        }
 
+            let start = document.getElementById("start").value;
+            let end = document.getElementById("end").value;
+
+            calculateAndDisplayRoute(directionsService, directionsRenderer,start,end,function() {
+                directionsRenderer.setMap(map);
+            });
+        }
+        findRide.disabled = false;
     });
 
     // find a ride
-    document.getElementById("submit").addEventListener("click", () => {
+    findRide.addEventListener("click", () => {
 
-        createLine(map,nearbyPosition,curPosition);
+        calculateAndDisplayRoute(directionsService, directionsRenderer,nearbyPosition,curPosition,function (res) {
 
-        // start to count down the timer
-        timer = setInterval("CountDown()", 1000);
+            createPickUpLine(map,res);
+            // console.log(res.routes[0].legs[0].distance.text,'distance');
+            // console.log(res.routes[0].legs[0].duration.text,'time')
+            directionsRenderer.setMap(map);
+            // get the timer element
+            let timerEle = document.getElementById('timer');
+            // put it in the map
+            map.controls[google.maps.ControlPosition.TOP_LEFT].push(timerEle);
+            // start to count time
+            timer = setInterval('CountTimeDown()', 1000);
+
+        });
+
+        findRide.disabled = true;
+
     });
 
-    directionsRenderer.setMap(map);
 }
 
-function calculateAndDisplayRoute(directionsService, directionsRenderer) {
-
-    let start = document.getElementById("start").value;
-    let end = document.getElementById("end").value;
+function calculateAndDisplayRoute(directionsService, directionsRenderer, start, end, callback) {
 
     directionsService.route(
         {
@@ -100,9 +126,12 @@ function calculateAndDisplayRoute(directionsService, directionsRenderer) {
             travelMode: google.maps.TravelMode.DRIVING
         },
         (response, status) => {
-            console.log(response,'res');
+
             if (status === "OK") {
+
                 directionsRenderer.setDirections(response);
+
+                callback(response);
 
             } else {
                 window.alert("Directions request failed due to " + status);
@@ -112,9 +141,9 @@ function calculateAndDisplayRoute(directionsService, directionsRenderer) {
 }
 
 // add markers for current and destination
-let markers = [];
-function addMarkers(map,places){
+function addLocationMarkers(map, places){
 
+    let markers = [];
     // For each place, get the icon, name and location.
     const bounds = new google.maps.LatLngBounds();
     places.forEach(place => {
@@ -155,7 +184,7 @@ function addMarkers(map,places){
 }
 
 // create Markers for nearby parking (driver)
-function createMarkers(places, map) {
+function createDriverMarkers(places, map) {
     const bounds = new google.maps.LatLngBounds();
 
     for (let i = 0, place; (place = places[i]); i++) {
@@ -178,23 +207,19 @@ function createMarkers(places, map) {
     map.fitBounds(bounds);
 }
 
-let lineSymbol, line;
+
 // create line for the driver to rider
-function  createLine(map,driverLocation,currentLocation) {
+function createPickUpLine(map,route) {
 
-    lineSymbol = {}; line = null;
-
+    let lineSymbol, line;
     lineSymbol = {
         path: google.maps.SymbolPath.CIRCLE,
         scale: 3,
-        strokeColor: "blue"
+        strokeColor: "black",
     };
     // Create the polyline and add the symbol to it via the 'icons' property.
     line = new google.maps.Polyline({
-        path: [
-            driverLocation,
-            currentLocation
-        ],
+        path: [],
         icons: [
             {
                 icon: lineSymbol,
@@ -203,33 +228,65 @@ function  createLine(map,driverLocation,currentLocation) {
         ],
         map: map
     });
+
+
+    let bounds = new google.maps.LatLngBounds();
+
+
+    let legs = route.routes[0].legs;
+
+    for (let i = 0; i < legs.length; i++) {
+        let steps = legs[i].steps;
+        for (let j = 0; j < steps.length; j++) {
+            let nextSegment = steps[j].path;
+            for (let k = 0; k < nextSegment.length; k++) {
+                line.getPath().push(nextSegment[k]);
+                bounds.extend(nextSegment[k]);
+            }
+        }
+    }
+
+    line.setMap(map);
+
     animateCircle(line);
 }
 
+let lineCircleAnimation = '';
 function animateCircle(line) {
     let count = 0;
-    window.setInterval(() => {
-        count = (count + 1) % 200;
+    lineCircleAnimation =setInterval(() => {
+        // make sure the circle in the pick up location
+        if(count < 199){
+            count = (count+1) % 200;
+        }
+        else{
+            count -1;
+        }
+
         const icons = line.get("icons");
         icons[0].offset = count / 2 + "%";
         line.set("icons", icons);
-    }, 20);
+
+        // console.log(count,'count')
+    },200);
+
+
+
+    console.log(count,'count:time');
 }
 
-
-let minues = Math.floor(Math.random() * 3) + 1; // returns a random integer from 1 to 3
-let maxtime = parseInt(minues) * 60;  // 1 hour = 60*60
-
-function CountDown() {
-    if (maxtime >= 0) {
-        let minutes = Math.floor(maxtime / 60),
-            seconds = Math.floor(maxtime % 60),
-            msg = `The driver has ${ minutes} minutes and ${seconds} seconds to reach your position`;
-        document.all["timer"].innerHTML = msg;
-        --maxtime;
+function CountTimeDown() {
+    if (maxTime >= 0) {
+        let min = Math.floor(maxTime / 60),
+            seconds = Math.floor(maxTime % 60),
+            msg = `The driver has ${ min} minutes and ${seconds} seconds to reach your position`;
+        document.getElementById('timer').innerHTML = msg;
+        --maxTime;
+        console.log(maxTime,'maxtime');
     } else{
         clearInterval(timer);
-        document.all["timer"].innerHTML = `The driver has arrived`;
+        clearInterval(lineCircleAnimation);
+        document.getElementById('timer').innerHTML = `The driver has arrived`;
     }
 }
 
