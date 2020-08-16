@@ -1,18 +1,24 @@
 "use strict";
 
+let map,directionsService,directionsRenderer;
+
+const inputStart = document.getElementById("start");
+const inputEnd = document.getElementById(("end"));
 
 const findRide = document.getElementById("findRide");
 
+const timerEle = document.getElementById('timer');
+
 let timer;
-let minutes = Math.floor(Math.random() * 2) + 1; // returns a random integer from 1 to 2
+let minutes = 1; // 1 minute
 let maxTime = parseInt(minutes) * 60;  // 1 hour = 60*60
 
 function initMap() {
 
-    const directionsService = new google.maps.DirectionsService();
-    const directionsRenderer = new google.maps.DirectionsRenderer({ suppressMarkers: true });
+    directionsService = new google.maps.DirectionsService();
+    directionsRenderer = new google.maps.DirectionsRenderer({ suppressMarkers: true });
 
-    const map = new google.maps.Map(document.getElementById("map"), {
+    map = new google.maps.Map(document.getElementById("map"), {
         zoom: 6,
         center: {
             lat: 41.85,
@@ -23,11 +29,11 @@ function initMap() {
     let curPosition = '';
     let nearbyPosition = '';
 
-    // Create the search box and link it to the UI element.
-    const inputStart = document.getElementById("start");
-    const currentLocation = new google.maps.places.SearchBox(inputStart);
+    inputStart.disabled = false;
+    inputEnd.disabled = false;
 
-    const inputEnd = document.getElementById(("end"));
+    // Create the search box and link it to the UI element.
+    const currentLocation = new google.maps.places.SearchBox(inputStart);
     const destination = new google.maps.places.SearchBox(inputEnd);
 
     findRide.disabled = true;
@@ -82,10 +88,9 @@ function initMap() {
         // if we have current position , calculate and display route
         if (curPosition){
 
-            let start = document.getElementById("start").value;
-            let end = document.getElementById("end").value;
+            let startLocation = inputStart.value, endLocation = inputEnd.value;
 
-            calculateAndDisplayRoute(directionsService, directionsRenderer,start,end,function() {
+            calculateAndDisplayRoute(directionsService, directionsRenderer,startLocation,endLocation,function() {
                 directionsRenderer.setMap(map);
             });
         }
@@ -95,18 +100,20 @@ function initMap() {
     // find a ride
     findRide.addEventListener("click", () => {
 
+        // disabled the start and end input box
+        inputStart.disabled = true;
+        inputEnd.disabled = true;
+
         calculateAndDisplayRoute(directionsService, directionsRenderer,nearbyPosition,curPosition,function (res) {
 
             createPickUpLine(map,res);
-            // console.log(res.routes[0].legs[0].distance.text,'distance');
-            // console.log(res.routes[0].legs[0].duration.text,'time')
+
             directionsRenderer.setMap(map);
-            // get the timer element
-            let timerEle = document.getElementById('timer');
-            // put it in the map
+
+            // put the timer element in the map
             map.controls[google.maps.ControlPosition.TOP_LEFT].push(timerEle);
-            // start to count time
-            timer = setInterval('CountTimeDown()', 1000);
+
+            timer = setInterval('startTimer()', 1000);
 
         });
 
@@ -262,32 +269,38 @@ function animateCircle(line) {
         else{
             count -1;
         }
-
         const icons = line.get("icons");
         icons[0].offset = count / 2 + "%";
         line.set("icons", icons);
 
-        // console.log(count,'count')
     },200);
-
-
-
-    console.log(count,'count:time');
 }
 
-function CountTimeDown() {
+function stopAnimationCircle() {
+    clearInterval(lineCircleAnimation);
+}
+
+function startTimer() {
     if (maxTime >= 0) {
         let min = Math.floor(maxTime / 60),
             seconds = Math.floor(maxTime % 60),
-            msg = `The driver has ${ min} minutes and ${seconds} seconds to reach your position`;
-        document.getElementById('timer').innerHTML = msg;
+            msg = `The driver has <b>${ min}</b> minutes and <b>${seconds}</b> seconds to reach your position`;
+            timerEle.innerHTML = msg;
         --maxTime;
-        console.log(maxTime,'maxtime');
+
     } else{
-        clearInterval(timer);
-        clearInterval(lineCircleAnimation);
-        document.getElementById('timer').innerHTML = `The driver has arrived`;
+        stopTimer();
+        stopAnimationCircle();
+        timerEle.innerHTML = `The driver has arrived`;
+
+        calculateAndDisplayRoute(directionsService, directionsRenderer,inputStart.value,inputEnd.value,function() {
+            directionsRenderer.setMap(map);
+        });
     }
+}
+
+function stopTimer() {
+    clearInterval(timer);
 }
 
 

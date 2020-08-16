@@ -59,9 +59,9 @@ input[type=text]:not(.browser-default){
 }
 
 #timer{
-    background:rgba(255,255,255,.8);
+    background:rgba(255,255,255,.95);
     font-size: 16px;
-    margin: 5px;
+    margin: 10px;
 }
 .page-footer{
     padding-top: 0px;
