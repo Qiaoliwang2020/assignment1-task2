@@ -4,14 +4,16 @@ body {
     display: flex;
     min-height: 100vh;
     flex-direction: column;
-    background-color: #B783C3;
+    background-color: #D7d7d7;
 }
 main {
     flex: 1 0 auto;
 }
 
-.title,.mainText{
-    color: white;
+.title{
+    color: #2B2301;
+    padding-left: 10px;
+    font-size: 28px;
 }
 .brand-logo{
     height: 100%;
@@ -28,13 +30,13 @@ main {
 }
 /* input field */
 input[type=text]:not(.browser-default){
-    border-bottom: 1px solid #FFF;
+    border-bottom: 1px solid #2B2301;
 }
 
 /* label color */
 .input-field label {
-    color: #FFF;
-    font-size: 18px;
+    color: #2B2301;
+    font-size: 22px;
 }
 /* label focus color */
 .input-field input[type=text]:not(.browser-default):focus + label {
@@ -46,11 +48,11 @@ input[type=text]:not(.browser-default){
     box-shadow: 0 1px 0 0 #000;
 }
 
-.bg-purple{
-    background-color: #9E65A9;;
+.bg-yellow{
+    background-color: #FFCC00;
 }
-.btn.bg-purple:hover{
-    background-color: #9E65A9;
+.btn.bg-yellow:hover{
+    background-color: #FFCC33;
 }
 /* Always set the map height explicitly to define the size of the div
        * element that contains the map. */
@@ -65,7 +67,7 @@ input[type=text]:not(.browser-default){
 }
 .page-footer{
     padding-top: 0px;
-    background-color: #9E65A9;
+    background-color: #333333;
 }
 .footer-copyright .copyright{
     display: flex;
