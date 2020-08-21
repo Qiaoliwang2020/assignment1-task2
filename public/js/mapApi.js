@@ -10,8 +10,8 @@ const findRide = document.getElementById("findRide");
 const timerEle = document.getElementById('timer');
 
 let timer;
-let minutes = 1; // 1 minute
-let maxTime = parseInt(minutes) * 60;  // 1 hour = 60*60
+let timerMins = Math.floor(Math.random() * 3) + 1; // returns a random integer from 1 to 3
+let maxTime = parseInt(timerMins) * 60;  // 1 hour = 60*60
 
 function initMap() {
 
@@ -260,6 +260,9 @@ function createPickUpLine(map,route) {
 
 let lineCircleAnimation = '';
 function animateCircle(line) {
+    let speed;
+    timerMins == 1 ? speed = 280 : timerMins == 2 ? speed = 560 : speed = 840;
+
     let count = 0;
     lineCircleAnimation =setInterval(() => {
         // make sure the circle in the pick up location
@@ -273,7 +276,7 @@ function animateCircle(line) {
         icons[0].offset = count / 2 + "%";
         line.set("icons", icons);
 
-    },200);
+    },speed);
 }
 
 function stopAnimationCircle() {
